@@ -21,8 +21,8 @@ def is_open(res, finger):
 
 
 with mp_hands.Hands(
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5) as hands:
+        min_detection_confidence=0.75,
+        min_tracking_confidence=0.75) as hands:
     while cap.isOpened():
         success, image = cap.read()
         if not success:
@@ -39,11 +39,9 @@ with mp_hands.Hands(
             right_hand = results.multi_hand_landmarks[0]
             for i, lm in enumerate(right_hand.landmark):
                 res.append((i, int(lm.x * image.shape[0]), int(lm.y * image.shape[1])))
-            """
             for hand_landmarks in results.multi_hand_landmarks:
                 mp_drawing.draw_landmarks(
                     image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-            """
 
             fingers_open = [is_open(res, finger) for finger in tips]
             if fingers_open[3] or fingers_open[4]:
