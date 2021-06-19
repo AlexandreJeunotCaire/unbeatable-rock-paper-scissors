@@ -39,7 +39,7 @@ history = deque()
 with mp_hands.Hands(
         min_detection_confidence=0.75,
         min_tracking_confidence=0.75) as hands:
-    round = True
+    ongoing = True
     time_to_decide = True
     last_played = None
     last_played_name = None
@@ -59,7 +59,7 @@ with mp_hands.Hands(
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         res = []
-        if round and results.multi_hand_landmarks:
+        if ongoing and results.multi_hand_landmarks:
             right_hand = results.multi_hand_landmarks[0]
             for i, lm in enumerate(right_hand.landmark):
                 res.append((i, int(lm.x * image.shape[0]), int(lm.y * image.shape[1])))
@@ -71,8 +71,6 @@ with mp_hands.Hands(
                             res[16][2] < res[14][2],
                             res[20][2] < res[18][2]
                             ]
-            #fingers_open = [is_open(res, finger) for finger in tips]
-
             candidate = ROCK
             if fingers_open[3] or fingers_open[4]:
                 candidate = PAPER
@@ -93,10 +91,6 @@ with mp_hands.Hands(
                     
                 if res is not None:
                     last_played_name = WINS[res]
-                    #img = show(WINS[res])
-                    #cv2.imshow("Bot Answer", img)
-                    #cv2.rectangle(image, (20,225), (170,425), (0,255,0),cv2.FILLED)
-                    #cv2.putText(image, WINS[res], (250,400), cv2.FONT_HERSHEY_SIMPLEX, 3, (0,0,0), 10)
                     if res == ROCK:
                         last_played = paper_img
                     elif res == PAPER:
@@ -125,7 +119,7 @@ with mp_hands.Hands(
                             true_answer = paper_img
                         else: 
                             true_answer = scissors_img
-                        round = False
+                        ongoing = False
                     
             if last_played is not None:
                 image[y_offset:y_offset+last_played.shape[0], x_offest:x_offest+last_played.shape[1]] = last_played
@@ -136,25 +130,25 @@ with mp_hands.Hands(
 
         if true_answer is not None:
             cv2.putText(image, "Round over", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 0, 0), 10)
+            cv2.putText(image, "Press \"[SPACE]\" to continue", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
             image[y_offset:y_offset+true_answer.shape[0], x_offest_user:x_offest_user+true_answer.shape[1]] = true_answer
 
 
         cv2.putText(image, f"You: {user_score}", (x_offest_user, y_offset - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         cv2.putText(image, f"Bot: {bot_score}", (x_offest, y_offset - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
-        cv2.imshow('MediaPipe Hands', image)
+        cv2.imshow('Rock paper scissors', image)
         if cv2.waitKey(5) & 0xFF == 32:
-            if not round:
+            if not ongoing:
                 if true_answer_name == WINS[last_played_name]:
                     user_score += 1
                 elif last_played_name == WINS[true_answer_name]:
                     bot_score += 1
             time_to_decide = True
-            round = True
+            ongoing = True
             last_played = None
             last_played_name = None
             true_answer = None_name = None
             history = deque()
-            #break
 
 
 cap.release()
