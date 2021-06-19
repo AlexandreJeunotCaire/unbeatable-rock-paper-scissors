@@ -103,7 +103,7 @@ with mp_hands.Hands(
                         last_played = rock_img
                     time_to_decide = False
 
-            else:
+            elif not time_to_decide:
                 # We draw the hand
                 for hand_landmarks in results.multi_hand_landmarks:
                     mp_drawing.draw_landmarks(
