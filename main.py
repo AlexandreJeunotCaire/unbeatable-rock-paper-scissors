@@ -3,6 +3,7 @@
 from cv2 import cv2
 from collections import deque
 import mediapipe as mp
+from time import time
 
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
@@ -39,15 +40,19 @@ with mp_hands.Hands(
         min_detection_confidence=0.75,
         min_tracking_confidence=0.75) as hands:
     round = True
+    time_to_decide = True
     last_played = None
-    x_offest = 0
+    last_played_name = None
+    true_answer = None
+    true_answer_name = None
+    x_offest = 500
+    x_offest_user = 0
     y_offset = 350
+    user_score = 0
+    bot_score = 0
     while cap.isOpened():
-        success, image = cap.read()
-        if not success:
-            print("Ignoring empty camera frame.")
-            break
-    
+        _, image = cap.read()
+   
         image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
         results = hands.process(image)
@@ -58,11 +63,15 @@ with mp_hands.Hands(
             right_hand = results.multi_hand_landmarks[0]
             for i, lm in enumerate(right_hand.landmark):
                 res.append((i, int(lm.x * image.shape[0]), int(lm.y * image.shape[1])))
-            for hand_landmarks in results.multi_hand_landmarks:
-                mp_drawing.draw_landmarks(
-                    image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-            fingers_open = [is_open(res, finger) for finger in tips]
+
+            fingers_open = [res[4][1] < res[3][1],
+                            res[8][2] < res[6][2],
+                            res[12][2] < res[10][2],
+                            res[16][2] < res[14][2],
+                            res[20][2] < res[18][2]
+                            ]
+            #fingers_open = [is_open(res, finger) for finger in tips]
 
             candidate = ROCK
             if fingers_open[3] or fingers_open[4]:
@@ -71,7 +80,8 @@ with mp_hands.Hands(
                 candidate = SCISSORS
 
             history.append(candidate)
-            if len(history) >= 3:
+
+            if time_to_decide and len(history) >= 3:
                 res = None
                 if history.count(ROCK) == 3:
                     res = ROCK
@@ -79,33 +89,71 @@ with mp_hands.Hands(
                     res = PAPER
                 elif history.count(SCISSORS) == 3:
                     res = SCISSORS
-                history.popleft()
-                if res is not None:                
+                
+                    
+                if res is not None:
+                    last_played_name = WINS[res]
                     #img = show(WINS[res])
                     #cv2.imshow("Bot Answer", img)
                     #cv2.rectangle(image, (20,225), (170,425), (0,255,0),cv2.FILLED)
                     #cv2.putText(image, WINS[res], (250,400), cv2.FONT_HERSHEY_SIMPLEX, 3, (0,0,0), 10)
-
                     if res == ROCK:
                         last_played = paper_img
-                        image[y_offset:y_offset+paper_img.shape[0], x_offest:x_offest+paper_img.shape[1]] = paper_img
                     elif res == PAPER:
                         last_played = scissors_img
-                        image[y_offset:y_offset+scissors_img.shape[0], x_offest:x_offest+scissors_img.shape[1]] = scissors_img
                     else:
                         last_played = rock_img
-                        image[y_offset:y_offset+rock_img.shape[0], x_offest:x_offest+rock_img.shape[1]] = rock_img
-                    round = False
+                    time_to_decide = False
+            else:
+                for hand_landmarks in results.multi_hand_landmarks:
+                    mp_drawing.draw_landmarks(
+                        image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                if len(history) == 5:
+                    res = None
+                    if history.count(ROCK) == 5:
+                        res = ROCK
+                    elif history.count(PAPER) == 5:
+                        res = PAPER
+                    elif history.count(SCISSORS) == 5:
+                        res = SCISSORS
+                    history.popleft()
+                    if res is not None:
+                        true_answer_name = res
+                        if res == ROCK:
+                            true_answer = rock_img
+                        elif res == PAPER:
+                            true_answer = paper_img
+                        else: 
+                            true_answer = scissors_img
+                        round = False
+                    
+            if last_played is not None:
+                image[y_offset:y_offset+last_played.shape[0], x_offest:x_offest+last_played.shape[1]] = last_played
 
-
-
-        elif last_played is not None:
-            image[y_offset:y_offset+last_played.shape[0], x_offest:x_offest+last_played.shape[1]] = last_played
         
+        if last_played is not None:
+            image[y_offset:y_offset+last_played.shape[0], x_offest:x_offest+last_played.shape[1]] = last_played
+
+        if true_answer is not None:
+            cv2.putText(image, "Round over", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (255, 0, 0), 10)
+            image[y_offset:y_offset+true_answer.shape[0], x_offest_user:x_offest_user+true_answer.shape[1]] = true_answer
+
+
+        cv2.putText(image, f"You: {user_score}", (x_offest_user, y_offset - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        cv2.putText(image, f"Bot: {bot_score}", (x_offest, y_offset - 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         cv2.imshow('MediaPipe Hands', image)
-        if cv2.waitKey(5) & 0xFF == 27:
+        if cv2.waitKey(5) & 0xFF == 32:
+            if not round:
+                if true_answer_name == WINS[last_played_name]:
+                    user_score += 1
+                elif last_played_name == WINS[true_answer_name]:
+                    bot_score += 1
+            time_to_decide = True
             round = True
             last_played = None
+            last_played_name = None
+            true_answer = None_name = None
+            history = deque()
             #break
 
 
