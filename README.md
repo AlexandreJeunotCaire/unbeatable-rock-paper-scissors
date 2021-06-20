@@ -20,6 +20,8 @@ La plupart des joueurs ayant tendance à former un poing derrière leur tête et
 
 Lorsqu'un round est terminé, vous pouvez appuer sur la barre d'espace pour en commencer un nouveau.
 
+Il est possible que l'ordinateur soit "bloqué" et joue sans montrer votre mouvement. Cela signifie qu'il n'est pas sûr de ce que vous avez fait. Par précaution et pour ne pas donner de points immérité, le round sera considéré comme nul et vous pourrez relancer un round avec `ESPACE`.
+
 ### Position des doigts
 
 Le moment le plus important est celui-ci :
@@ -73,3 +75,5 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+Au cours du jeu, appuyez sur `ESPACE` pour lancer le round suivant. Appuyez sur `R` pour réinitialiser le score, et sur `Esc` pour quitter.

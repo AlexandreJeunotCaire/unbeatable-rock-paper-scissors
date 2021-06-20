@@ -164,5 +164,12 @@ with mp_hands.Hands(
             true_answer_name = None
             history = deque()
 
+        if cv2.waitKey(1) & 0xFF == ord("r"):
+            user_score = 0
+            bot_score = 0
+
+        if cv2.waitKey(5) & 0xFF == 27:
+            break
+
 
 cap.release()
